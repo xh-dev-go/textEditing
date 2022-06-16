@@ -20,7 +20,7 @@ func init() {
 	rootCmd.AddCommand(lineCmd)
 	lineCmd.AddCommand(line.LnCmd)
 	lineCmd.AddCommand(line.RmCmd)
-	lineCmd.PersistentFlags().BoolP("exec", "r", false, "execute the command")
+	lineCmd.PersistentFlags().BoolP("exec", "e", false, "execute the command")
 
 	// Here you will define your flags and configuration settings.
 

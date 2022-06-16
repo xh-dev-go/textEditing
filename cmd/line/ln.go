@@ -21,8 +21,12 @@ var LnCmd = &cobra.Command{
 	Short:   "Add a line number to every row",
 	Long:    `Add a line number to every row`,
 	Run: func(cmd *cobra.Command, args []string) {
-		run, err := cmd.LocalFlags().GetBool("exec")
-		if err != nil || !run {
+		run, err := cmd.Flags().GetBool("exec")
+		if err != nil {
+			if !run {
+				fmt.Println("No exec flag indicated!!!")
+				fmt.Println()
+			}
 			cmd.Usage()
 			return
 		}

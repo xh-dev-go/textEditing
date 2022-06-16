@@ -15,7 +15,7 @@ var rootCmd = &cobra.Command{
 	Use:     "textEditing",
 	Short:   "A command line tool for text editing",
 	Long:    `A command line tool for text editing`,
-	Version: "1.0.0",
+	Version: "1.1.0",
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	// Run: func(cmd *cobra.Command, args []string) { },

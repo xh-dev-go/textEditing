@@ -16,9 +16,10 @@ import (
 
 // rmCmd represents the rm command
 var RmCmd = &cobra.Command{
-	Use:   "rm",
-	Short: "Split each row by separator and keep the tail",
-	Long: `Split each row by separator and keep the tail
+	Use:   "tail",
+	Short: "keep the tail of string",
+	Long: `Split each row by column index or separator and keep the tail
+
 Input: 
 sep->xx
 msg->sdfxxsdfasdxxx\nddddddxxjsdkfjs
@@ -28,8 +29,13 @@ sdfasdxxx\njsdkfjs
 
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		run, err := cmd.LocalFlags().GetBool("exec")
-		if err != nil || !run {
+		run, err := cmd.Flags().GetBool("exec")
+
+		if err != nil {
+			if !run {
+				fmt.Println("No exec flag indicated!!!")
+				fmt.Println()
+			}
 			cmd.Usage()
 			return
 		}
@@ -48,6 +54,11 @@ sdfasdxxx\njsdkfjs
 		if err != nil {
 			panic(err)
 		}
+		col, err := cmd.Flags().GetInt("column")
+		if err != nil {
+			panic(err)
+		}
+
 		var reader *bufio.Reader
 		if cbIn {
 			strs, err := clipboard.ReadAll()
@@ -88,9 +99,15 @@ sdfasdxxx\njsdkfjs
 				} else {
 					prefixOn = true
 					index++
-					l, replaced := stringUtils.RemoveFirst(string(lineBytes), sep)
-					if !replaced {
-						panic("No replace for: " + string(lineBytes))
+					var l string
+					if col == 0 {
+						var replaced bool
+						l, replaced = stringUtils.RemoveFirst(string(lineBytes), sep)
+						if !replaced {
+							panic("No replace for: " + string(lineBytes))
+						}
+					} else {
+						l = string(lineBytes)[col:]
 					}
 
 					_, err := fmt.Fprintf(os.Stdout, l)
@@ -115,9 +132,15 @@ sdfasdxxx\njsdkfjs
 					}
 				} else {
 					index++
-					l, replaced := stringUtils.RemoveFirst(string(lineBytes), sep)
-					if !replaced {
-						panic("No replace for: " + string(lineBytes))
+					var l string
+					if col == 0 {
+						var replaced bool
+						l, replaced = stringUtils.RemoveFirst(string(lineBytes), sep)
+						if !replaced {
+							panic("No replace for: " + string(lineBytes))
+						}
+					} else {
+						l = string(lineBytes)[col:]
 					}
 					l = l + "\n"
 					_, err := fmt.Fprintf(os.Stdout, l)
@@ -141,6 +164,7 @@ sdfasdxxx\njsdkfjs
 }
 
 func init() {
+	RmCmd.PersistentFlags().IntP("column", "c", 0, "keep tail from column index")
 	RmCmd.PersistentFlags().StringP("separator", "s", "\t", "separator to be removed.")
 	RmCmd.PersistentFlags().BoolP("clipboard-in", "i", false, "The source is from clipboard, otherwise from the stdin")
 	RmCmd.PersistentFlags().BoolP("clipboard-out", "o", false, "The destination to clipboard also, default to stdout only")
