@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"github.com/atotto/clipboard"
 	"github.com/spf13/cobra"
+	"github.com/xh-dev-go/textEditing/funcs"
 	"github.com/xh-dev-go/xhUtils/stringUtils"
-	"io"
 	"os"
 )
 
@@ -21,18 +21,7 @@ var LnCmd = &cobra.Command{
 	Short:   "Add a line number to every row",
 	Long:    `Add a line number to every row`,
 	Run: func(cmd *cobra.Command, args []string) {
-		run, err := cmd.Flags().GetBool("exec")
-		if err != nil {
-			if !run {
-				fmt.Println("No exec flag indicated!!!")
-				fmt.Println()
-			}
-			cmd.Usage()
-			return
-		}
-
-		var index = 0
-		var prefixOn = false
+		funcs.CommonExec(cmd)
 
 		cbIn, err := cmd.LocalFlags().GetBool("clipboard-in")
 		if err != nil {
@@ -62,64 +51,54 @@ var LnCmd = &cobra.Command{
 			reader = bufio.NewReader(os.Stdin)
 		}
 
-		var msgOut = ""
-		for {
-			lineBytes, isPrefix, err := reader.ReadLine()
-			if err != nil {
+		var index = 0
 
-				// Complete task
-				if err == io.EOF {
-					break
-				} else {
-					_, err := fmt.Fprintf(os.Stderr, err.Error())
-					if err != nil {
-						panic(err)
-					}
-				}
-			}
-
-			if isPrefix {
-				prefixOn = true
-				index++
-				l := stringUtils.StringConcat(stringUtils.FormatNum(index, format), sep, string(lineBytes), false)
-
-				_, err := fmt.Fprintf(os.Stdout, l)
-				if err != nil {
-					panic(err)
-				}
-				if cbOut {
-					msgOut += l
-				}
-			} else {
-
-				if prefixOn {
-					prefixOn = false
-					l := fmt.Sprintf("%s\n", string(lineBytes))
-					_, err := fmt.Fprintf(os.Stdout, l)
-					if err != nil {
-						panic(err)
-					}
-					if cbOut {
-						msgOut += l
-					}
-				} else {
+		var out = make(chan funcs.LineOut)
+		var done = make(chan struct{})
+		func() {
+			processor := funcs.NewStringProcessor(
+				func(input string) string {
 					index++
-					l := stringUtils.StringConcat(stringUtils.FormatNum(index, format), sep, string(lineBytes), true)
-					_, err := fmt.Fprintf(os.Stdout, l)
-					if err != nil {
-						panic(err)
-					}
-					if cbOut {
-						msgOut += l
-					}
+					return stringUtils.StringConcat(stringUtils.FormatNum(index, format), sep, input, false)
+				},
+				func(input string) string {
+					index++
+					return stringUtils.StringConcat(stringUtils.FormatNum(index, format), sep, input, true)
+				},
+				func(input string) string {
+					return fmt.Sprintf("%s", input)
+				},
+			)
+			go processor.ProcessReader(
+				reader,
+				out,
+				done,
+			)
+		}()
+
+		var msgOut = ""
+		funcs.ForComplete(out, done, func(lineOut funcs.LineOut) {
+			switch lineOut.InputMode {
+			case funcs.NewComplete:
+				fmt.Print(lineOut.String)
+				if cbOut {
+					msgOut += lineOut.String
+				}
+			case funcs.NewPartial:
+				fmt.Print(lineOut.String)
+				if cbOut {
+					msgOut += lineOut.String
+				}
+			case funcs.RestingOfLine:
+				fmt.Print(lineOut.String)
+				if cbOut {
+					msgOut += lineOut.String
 				}
 			}
-		}
+		})
+
 		if cbOut {
 			err = clipboard.WriteAll(msgOut)
-		}
-		if err != nil {
-			return
 		}
 	},
 }

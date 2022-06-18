@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/atotto/clipboard"
 	"github.com/spf13/cobra"
+	"github.com/xh-dev-go/textEditing/funcs"
 	"github.com/xh-dev-go/xhUtils/stringUtils"
 	"io"
 	"os"
@@ -29,16 +30,7 @@ sdfasdxxx\njsdkfjs
 
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		run, err := cmd.Flags().GetBool("exec")
-
-		if err != nil {
-			if !run {
-				fmt.Println("No exec flag indicated!!!")
-				fmt.Println()
-			}
-			cmd.Usage()
-			return
-		}
+		funcs.CommonExec(cmd)
 
 		var index = 0
 		var prefixOn = false
@@ -157,7 +149,7 @@ sdfasdxxx\njsdkfjs
 			err = clipboard.WriteAll(msgOut)
 		}
 		if err != nil {
-			return
+			panic(err)
 		}
 
 	},
